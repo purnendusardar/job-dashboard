@@ -325,7 +325,7 @@
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
         <button class="btn" onclick="analysePaste()"><i class="ti ti-sparkles"></i> Analyse match</button>
         <button class="btn-ghost" onclick="document.getElementById('jd-paste').value=''"><i class="ti ti-x"></i> Clear</button>
-        <span id="paste-key-warn" style="font-size:11px;color:var(--amber);display:none"><i class="ti ti-alert-triangle"></i> Add your Anthropic API key in Settings first</span>
+        <span id="paste-key-warn" style="font-size:11px;color:var(--amber);display:none"><i class="ti ti-alert-triangle"></i> Add your Groq API key in Settings first</span>
       </div>
       <div id="paste-result"></div>
     </div>
@@ -371,19 +371,20 @@
     <div class="view" id="view-settings">
       <div class="sec-title"><i class="ti ti-key"></i> API key — stored in your browser only, never sent to GitHub</div>
       <div class="profile-card" style="max-width:480px">
-        <h3>Anthropic API key</h3>
+        <h3>Groq API key</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
           Required for match analysis, cover letter drafting, and Paste &amp; Analyse.<br>
+          Powered by <b style="color:var(--teal)">Llama 3 70B</b> via Groq — free tier, no credit card needed.<br>
           Stored in <code style="color:var(--teal)">localStorage</code> — never leaves your browser.
         </p>
-        <input class="api-key-input" id="api-key-input" type="password" placeholder="sk-ant-api03-…" oninput="saveKey()">
+        <input class="api-key-input" id="api-key-input" type="password" placeholder="gsk_…" oninput="saveKey()">
         <div class="key-status" id="key-status"></div>
         <div style="margin-top:12px;display:flex;gap:8px">
           <button class="btn btn-sm" onclick="saveKey(true)"><i class="ti ti-check"></i> Save</button>
           <button class="btn-ghost btn-sm" onclick="clearKey()"><i class="ti ti-trash"></i> Clear</button>
         </div>
         <p style="font-size:11px;color:var(--muted);margin-top:10px">
-          Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+          Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — sign up takes 1 minute, no credit card required.
         </p>
       </div>
     </div>
@@ -882,11 +883,11 @@ async function analysePaste() {
   out.innerHTML = '<div class="generating"><i class="ti ti-loader-2 spin"></i> Analysing with Claude…</div>';
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-client-side-api-key-access': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama3-70b-8192',
         max_tokens: 800,
         messages: [{
           role: 'user',
@@ -912,7 +913,7 @@ ${jd.slice(0, 2500)}`
 
     if (!resp.ok) throw new Error(`API error: ${resp.status}`);
     const data = await resp.json();
-    let text = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
+    let text = (data.choices?.[0]?.message?.content || '{}').replace(/```json|```/g,'').trim();
     let res;
     try { res = JSON.parse(text); } catch(e) { res = { match_pct: 0, summary: 'Could not parse response.', matched_skills: [], missing_skills: [] }; }
 
@@ -970,7 +971,7 @@ async function generateCover(id) {
 
   if (!key) {
     out.innerHTML = `<div style="color:var(--amber);font-size:12px;margin-top:10px">
-      <i class="ti ti-key"></i> Add your Anthropic API key in Settings to enable cover letter generation.
+      <i class="ti ti-key"></i> Add your Groq API key in Settings to enable cover letter generation.
     </div>`;
     return;
   }
@@ -978,11 +979,11 @@ async function generateCover(id) {
   out.innerHTML = '<div class="generating"><i class="ti ti-loader-2 spin"></i> Drafting cover letter…</div>';
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-client-side-api-key-access': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama3-70b-8192',
         max_tokens: 700,
         messages: [{
           role: 'user',
@@ -1001,7 +1002,7 @@ Reply with only the letter text.`
 
     if (!resp.ok) throw new Error(`API error: ${resp.status}`);
     const data = await resp.json();
-    const text = data.content?.[0]?.text || 'Could not generate cover letter.';
+    const text = data.choices?.[0]?.message?.content || 'Could not generate cover letter.';
 
     out.innerHTML = `
       <div class="ai-box" style="margin-top:12px">
