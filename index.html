@@ -609,7 +609,7 @@ function ringHTML(score) {
 // ── Fetch jobs ────────────────────────────────────────────────────────────────
 async function fetchJobs() {
   const list = document.getElementById('job-list');
-  list.innerHTML = `<div class="loading-wrap"><div class="loading-bar"></div><div class="loading-text">Querying Platsbanken API…</div></div>`;
+  list.innerHTML = `<div class="loading-wrap"><div class="loading-bar"></div><div class="loading-text">Connecting to Platsbanken via proxy…</div></div>`;
 
   const queries = [
     'remote sensing',
@@ -624,10 +624,32 @@ async function fetchJobs() {
   const allJobs = [];
   const seen    = new Set();
 
+  // CORS proxies tried in order — first one to succeed is used for all queries
+  const PROXIES = [
+    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://cors-anywhere.herokuapp.com/${u}`
+  ];
+
+  // Detect which proxy works
+  let workingProxy = null;
+  const testUrl = `https://jobsearch.api.jobtechdev.se/search?q=gis&country=i46j9HoB&limit=1`;
+  for (const proxy of PROXIES) {
+    try {
+      const r = await fetch(proxy(testUrl));
+      if (r.ok) { workingProxy = proxy; break; }
+    } catch(e) { /* try next */ }
+  }
+
+  if (!workingProxy) {
+    list.innerHTML = `<div class="empty"><i class="ti ti-wifi-off"></i><p>Could not reach Platsbanken through any proxy.<br><br>Use "Paste &amp; Analyse" to manually analyse any job description,<br>or try again later.</p></div>`;
+    return;
+  }
+
   for (const q of queries) {
     try {
       const url = `https://jobsearch.api.jobtechdev.se/search?q=${encodeURIComponent(q)}&country=i46j9HoB&limit=20&offset=0`;
-      const r   = await fetch(url);
+      const r   = await fetch(workingProxy(url));
       if (!r.ok) continue;
       const d   = await r.json();
       (d.hits || []).forEach(j => {
@@ -637,7 +659,7 @@ async function fetchJobs() {
   }
 
   if (!allJobs.length) {
-    list.innerHTML = `<div class="empty"><i class="ti ti-wifi-off"></i><p>Could not reach Platsbanken. Check your connection or try again later.<br><br>Use "Paste &amp; Analyse" to manually analyse any job description.</p></div>`;
+    list.innerHTML = `<div class="empty"><i class="ti ti-search"></i><p>No matching jobs found for current keywords.<br>Try refreshing or use "Paste &amp; Analyse" for manual analysis.</p></div>`;
     return;
   }
 
