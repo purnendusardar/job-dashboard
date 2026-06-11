@@ -596,13 +596,17 @@ async function fetchJobs() {
   list.innerHTML = `<div class="loading-wrap"><div class="loading-bar"></div><div class="loading-text">Connecting to Platsbanken via proxy…</div></div>`;
 
   const queries = [
-    'remote sensing',
-    'GIS analyst',
+    'GIS',
+    'geodata',
+    'miljödata',
+    'fjärranalys',
+    'kartograf',
     'geospatial',
-    'earth observation',
-    'miljödata klimat',
-    'geodata analyst',
-    'data engineer environmental'
+    'naturvård data',
+    'klimatdata',
+    'dataanalytiker miljö',
+    'maskininlärning miljö',
+    'remote sensing'
   ];
 
   const allJobs = [];
@@ -630,12 +634,14 @@ async function fetchJobs() {
     return;
   }
 
+  let fetchedCount = 0;
   for (const q of queries) {
     try {
-      const url = `https://jobsearch.api.jobtechdev.se/search?q=${encodeURIComponent(q)}&country=i46j9HoB&limit=20&offset=0`;
+      const url = `https://jobsearch.api.jobtechdev.se/search?q=${encodeURIComponent(q)}&country=i46j9HoB&limit=30&offset=0`;
       const r   = await fetch(workingProxy(url));
       if (!r.ok) continue;
       const d   = await r.json();
+      fetchedCount += (d.hits || []).length;
       (d.hits || []).forEach(j => {
         if (!seen.has(j.id)) { seen.add(j.id); allJobs.push(j); }
       });
@@ -643,7 +649,7 @@ async function fetchJobs() {
   }
 
   if (!allJobs.length) {
-    list.innerHTML = `<div class="empty"><i class="ti ti-search"></i><p>No matching jobs found for current keywords.<br>Try refreshing or use "Paste &amp; Analyse" for manual analysis.</p></div>`;
+    list.innerHTML = `<div class="empty"><i class="ti ti-search"></i><p>Platsbanken returned no results for current keywords (${fetchedCount} raw hits, all duplicates or filtered).<br><br>Try clicking Fetch jobs again, or use "Paste &amp; Analyse" to manually analyse any job description.</p></div>`;
     return;
   }
 
