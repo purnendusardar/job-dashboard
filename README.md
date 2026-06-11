@@ -10,7 +10,7 @@ Personal job search dashboard for Purnendu Sardar — built for the Swedish GeoA
 - **Cover letter drafting** — AI-generated opening letter per job
 - **Application tracker** — Kanban board (Saved → Applied → Interview → Offer), persists in browser
 - **Skill gap heatmap** — aggregates missing skills across all viewed jobs
-- **Residency countdown** — tracks your Jan 2028 PR deadline with urgency phases
+
 
 ---
 
