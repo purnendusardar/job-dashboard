@@ -49,21 +49,23 @@
   .sidebar-footer { padding: 12px 18px; border-top: 1px solid var(--border); }
   .main { padding: 24px 28px; overflow-y: auto; }
 
-  /* ── Countdown ── */
-  .countdown-bar {
+  /* ── Global search bar ── */
+  .global-search-bar {
     background: #080f1c; border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px 20px; margin-bottom: 20px;
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 16px; margin-bottom: 20px;
   }
-  .countdown-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
-  .countdown-track { flex: 1; min-width: 120px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .countdown-fill { height: 100%; border-radius: 3px; background: var(--teal); transition: width .4s; }
-  .countdown-value { font-size: 13px; font-weight: 500; white-space: nowrap; }
-  .urgency-pill { font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
-  .u-green { background: #052e16; color: var(--green); }
-  .u-amber { background: #451a03; color: var(--amber); }
-  .u-red   { background: #450a0a; color: var(--red); }
-  .pr-note { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .global-search-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .global-search-wrap i { color: var(--muted); font-size: 20px; flex-shrink: 0; }
+  .global-search-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 15px; font-family: 'Inter', sans-serif;
+  }
+  .global-search-input::placeholder { color: var(--muted); }
+  .global-search-bar:focus-within {
+    border-color: var(--teal);
+  }
 
   /* ── Stats row ── */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
@@ -249,8 +251,7 @@
     </nav>
     <div class="sidebar-footer">
       <div style="font-size:10px;color:var(--muted);line-height:1.5">
-        PR eligible: <b style="color:var(--text)">8 Jan 2028</b><br>
-        Latest apply: <b style="color:var(--amber)">Jul 2027</b>
+        GeoAI Job Dashboard · Sweden
       </div>
     </div>
   </aside>
@@ -258,13 +259,15 @@
   <!-- ── Main ── -->
   <main class="main">
 
-    <!-- Countdown bar -->
-    <div class="countdown-bar">
-      <div class="countdown-label">Residency clock</div>
-      <div class="countdown-track"><div class="countdown-fill" id="cd-fill"></div></div>
-      <div class="countdown-value" id="cd-val" style="color:var(--teal)">—</div>
-      <div class="urgency-pill u-green" id="cd-pill">🟢 Build phase</div>
-      <div class="pr-note">PR eligible: <b style="color:var(--text)">8 Jan 2028</b> &nbsp;·&nbsp; Apply by: <b style="color:var(--amber)">Jul 2027</b></div>
+    <!-- Global search bar -->
+    <div class="global-search-bar">
+      <div class="global-search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="global-search-input" id="global-search" placeholder="Search jobs by title, employer, skill, location…" oninput="onGlobalSearch()">
+        <button class="btn btn-sm" onclick="fetchJobs()" style="flex-shrink:0">
+          <i class="ti ti-refresh"></i> Fetch jobs
+        </button>
+      </div>
     </div>
 
     <!-- Stats row -->
@@ -285,9 +288,9 @@
         <div class="stat-sub">in tracker</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Days to deadline</div>
-        <div class="stat-val" id="s-days" style="color:var(--teal)">—</div>
-        <div class="stat-sub">contract ends 11 Jan 2028</div>
+        <div class="stat-label">Last fetched</div>
+        <div class="stat-val" id="s-lastfetch" style="font-size:14px;color:var(--muted)">—</div>
+        <div class="stat-sub">Platsbanken</div>
       </div>
     </div>
 
@@ -449,8 +452,6 @@ let gapCounts   = {};
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
-  calcCountdown();
-  setInterval(calcCountdown, 60000);
   loadFromStorage();
   renderKanban();
   renderProfilePanel();
@@ -458,38 +459,21 @@ function init() {
   loadApiKeyStatus();
 }
 
-// ── Countdown ─────────────────────────────────────────────────────────────────
-function calcCountdown() {
-  const pr    = new Date('2028-01-08');
-  const start = new Date('2025-01-08');
-  const now   = new Date();
-  const total   = pr - start;
-  const elapsed = now - start;
-  const pct  = Math.min(100, Math.max(0, (elapsed / total) * 100));
-  const days = Math.round((pr - now) / 86400000);
-
-  document.getElementById('cd-fill').style.width = pct + '%';
-  document.getElementById('cd-val').textContent  = days + ' days';
-  document.getElementById('s-days').textContent  = days;
-
-  const fill = document.getElementById('cd-fill');
-  const pill = document.getElementById('cd-pill');
-  const applyDeadline = new Date('2027-07-01');
-  const activeStart   = new Date('2027-01-01');
-
-  if (now >= applyDeadline) {
-    fill.style.background = 'var(--red)';
-    pill.className = 'urgency-pill u-red';
-    pill.textContent = '🔴 Must apply now';
-  } else if (now >= activeStart) {
-    fill.style.background = 'var(--amber)';
-    pill.className = 'urgency-pill u-amber';
-    pill.textContent = '🟡 Active search';
-  } else {
-    fill.style.background = 'var(--teal)';
-    pill.className = 'urgency-pill u-green';
-    pill.textContent = '🟢 Build & monitor';
+// ── Global search ─────────────────────────────────────────────────────────────
+function onGlobalSearch() {
+  const q = document.getElementById('global-search').value;
+  // Sync to the feed search box and trigger render
+  const feedBox = document.getElementById('search-box');
+  if (feedBox) feedBox.value = q;
+  // Switch to feed view if not already there
+  const feedView = document.getElementById('view-feed');
+  if (!feedView.classList.contains('active')) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    feedView.classList.add('active');
+    document.querySelector('.nav-item[onclick*="feed"]').classList.add('active');
   }
+  renderJobs();
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -674,6 +658,7 @@ async function fetchJobs() {
   document.getElementById('s-total').textContent      = jobs.length;
   document.getElementById('feed-badge').textContent   = jobs.length;
   document.getElementById('s-high').textContent       = jobs.filter(j => j._match.score >= 70).length;
+  document.getElementById('s-lastfetch').textContent  = new Date().toLocaleTimeString('en-SE', { hour:'2-digit', minute:'2-digit' });
   document.getElementById('last-fetch-label').textContent = '· fetched just now';
 
   renderJobs();
@@ -683,7 +668,7 @@ async function fetchJobs() {
 // ── Render job list ───────────────────────────────────────────────────────────
 function renderJobs() {
   const list = document.getElementById('job-list');
-  const q    = document.getElementById('search-box').value.toLowerCase();
+  const q = (document.getElementById('search-box').value || document.getElementById('global-search').value).toLowerCase();
 
   let filtered = jobs.filter(j => {
     const text = (j.headline + ' ' + (j.employer?.name || '')).toLowerCase();
