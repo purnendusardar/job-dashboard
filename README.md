@@ -51,14 +51,16 @@ GitHub will show a URL like: `https://YOUR_USERNAME.github.io/job-dashboard/`
 
 It takes ~1 minute to go live.
 
-### Step 4 — Add your Anthropic API key
+### Step 4 — Add your Groq API key (free)
 
-1. Open your dashboard URL
-2. Click **API Key** in the left sidebar
-3. Paste your key from [console.anthropic.com](https://console.anthropic.com)
-4. Click **Save**
+1. Sign up at [console.groq.com](https://console.groq.com) — no credit card needed
+2. Go to **API Keys** → **Create API Key** → copy the key (starts with `gsk_`)
+3. Open your dashboard URL
+4. Click **API Key** in the left sidebar
+5. Paste your key → click **Save**
 
 The key is stored in your browser's `localStorage` — it never gets uploaded to GitHub.
+AI features are powered by **Llama 3 70B** running on Groq's free tier (14,400 requests/day).
 
 ---
 
